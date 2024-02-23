@@ -92,4 +92,4 @@ If you read up until now, then it means you understand that the code I made can 
 
 I also made a done.txt just so that I can see if I missed any songs which I can add later one. On the same note, if you want to extend the 200 songs per day limit, just make more api's using different google accounts and make sure switch the client_secrets.json file if you do so. (P.S This is what I did)
 
-That is all, you should be able to run the AddPlaylist.py file and if you face any problems please to contact me.
+That is all, you should be able to run the AddPlaylist.py file and if you face any problems please do contact me.
