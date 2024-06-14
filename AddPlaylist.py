@@ -8,7 +8,7 @@ api_service_name = "youtube"
 api_version = "v3"
 
 flow = google_auth_oauthlib.flow.InstalledAppFlow.from_client_secrets_file(
-    "client_secret.json", scopes,
+    "client_secrets.json", scopes,
     redirect_uri='urn:ietf:wg:oauth:2.0:oob'
 )
 credentials = flow.run_local_server(port=8080)
@@ -28,40 +28,61 @@ def search_youtube(query, num_results=1):
     id = top_result['id']
     return id
 
-i = 0
-invalid = []
-file = open('done.txt','r')
-content = file.readlines()
-file.close()
-file = open('done.txt','a')
-with open('songs.txt','r') as f:
-    for line in f:
-        if(line in content):
-            print("Already Done\n")
-            continue
-        else:
-            content.append(line)
-            print(line.rstrip().lstrip())
-            songid = search_youtube(line.rstrip().lstrip())
-            if(songid == 'none'):
-                invalid.append(line)
-                continue
-            try:
-                request = youtube.playlistItems().insert(
-                    part="snippet",
-                    body={
-                        "snippet": {
-                            "playlistId": playlist_id,
-                            "resourceId": {"kind": "youtube#video", "videoId": songid},
-                        },
-                    },
-                )
-                response = request.execute()
-                print("Video added to the playlist successfully!")
-                file.write(line)
-            except googleapiclient.errors.HttpError as e:
-                print(f"An error occurred: {e}")
+def read_and_delete_lines(file_path, num_lines=200):
+    lines = []
+    with open(file_path, 'r') as file:
+        for i in range(num_lines):
+            line = file.readline()
+            if not line:
+                num_lines = i
                 break
+            lines.append(line)
+    
+    with open(file_path, 'r') as file:
+        data = file.readlines()
+    
+    with open(file_path, 'w') as file:
+        file.writelines(data[num_lines:])
+    
+    return lines
 
-for i in invalid:
-    print(i)
+if __name__ == "__main__":
+    lines = read_and_delete_lines("./songs.txt")
+    done = []
+    invalid = []
+    with open("done.txt", "r") as f:
+        done = f.readlines()
+
+    done_file_handler = open("done.txt", "a")
+
+    for line in lines:
+        if (line in done):
+            print(f"{line} is already done!\n")
+            continue
+        done.append(line)
+        print("Doing: ", line.rstrip().lstrip())
+        songid = search_youtube(line.rstrip().lstrip())
+        if(songid == 'none'):
+            invalid.append(line)
+            continue
+        try:
+            request = youtube.playlistItems().insert(
+                part="snippet",
+                body={
+                    "snippet": {
+                        "playlistId": playlist_id,
+                        "resourceId": {"kind": "youtube#video", "videoId": songid},
+                    },
+                },
+            )
+            response = request.execute()
+            print("Video added to the playlist successfully!\n")
+            done_file_handler.write(line)
+        except googleapiclient.errors.HttpError as e:
+            print(f"An error occurred: {e}\n\n")
+            continue
+    
+    done_file_handler.close()
+
+    for i in invalid:
+        print("Could not find video for: ", invalid)
